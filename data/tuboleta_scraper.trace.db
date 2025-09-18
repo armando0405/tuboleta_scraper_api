@@ -1,0 +1,12 @@
+2025-09-17 20:51:51.606477-05:00 jdbc[13]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Error de Sintaxis en sentencia SQL "show tables[*]:"
+Syntax error in SQL statement "show tables[*]:"; SQL statement:
+show tables: [42000-232]
+2025-09-17 23:18:46.063410-05:00 jdbc[13]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Error de Sintaxis en sentencia SQL "[*]SHOW_INSTANTANEA"; se esperaba "SAVEPOINT, SCRIPT, SHUTDOWN"
+Syntax error in SQL statement "[*]SHOW_INSTANTANEA"; expected "SAVEPOINT, SCRIPT, SHUTDOWN"; SQL statement:
+SHOW_INSTANTANEA [42001-232]
+2025-09-17 23:18:53.243592-05:00 jdbc[13]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Error de Sintaxis en sentencia SQL "[*]SHOW_INSTANTANEA"; se esperaba "SAVEPOINT, SCRIPT, SHUTDOWN"
+Syntax error in SQL statement "[*]SHOW_INSTANTANEA"; expected "SAVEPOINT, SCRIPT, SHUTDOWN"; SQL statement:
+SHOW_INSTANTANEA [42001-232]
