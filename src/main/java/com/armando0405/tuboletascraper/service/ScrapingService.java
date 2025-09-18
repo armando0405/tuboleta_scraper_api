@@ -109,7 +109,7 @@ public class ScrapingService {
                     .ciudad(ciudad != null ? ciudad.trim() : "")
                     .fechaShow(fechaShow)
                     .urlFuente(urlFuente)
-                    .rawHtml(showElement.outerHtml())
+                    //.rawHtml(showElement.outerHtml()) //habilitar unicamente para debug guarda todo el html del show
                     .build();
 
             // Generar ID único

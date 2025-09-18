@@ -1,19 +1,22 @@
 package com.armando0405.tuboletascraper.dao.entity;
 
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 
+import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 @Entity
 @Table(name = "show_instantanea")
-@Data @Builder @NoArgsConstructor @AllArgsConstructor
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ShowInstantanea {
 
     @Id
@@ -31,7 +34,7 @@ public class ShowInstantanea {
     private String titulo;
 
     @Column(length = 200)
-    private String venue; // Este se mantiene en inglés (es universal)
+    private String venue;
 
     @Column(length = 100)
     private String ciudad;
@@ -44,10 +47,6 @@ public class ShowInstantanea {
 
     @Column(name = "url_fuente", length = 500)
     private String urlFuente;
-
-    @Lob
-    @Column(name = "html_crudo")
-    private String htmlCrudo;
 
     @CreationTimestamp
     @Column(name = "fecha_creacion")

@@ -22,7 +22,6 @@ public class Show {
     private String urlFuente;
     private String rawHtml;
 
-    // Método para generar ID único
     public void generateUniqueId() {
         String base = titulo + "|" + venue + "|" + ciudad;
         this.showUniqueId = base.toLowerCase()

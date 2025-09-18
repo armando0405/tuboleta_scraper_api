@@ -27,6 +27,10 @@ spring:
       hibernate:
         format_sql: true
 
+  jackson:
+    time-zone: America/Bogota
+    date-format: yyyy-MM-dd HH:mm:ss
+
 # Configuración del scraper
 scraping:
   tuboleta:
@@ -45,3 +49,9 @@ management:
   endpoint:
     health:
       show-details: always
+
+# Configuración de logging (opcional)
+logging:
+  level:
+    com.armando0405.tuboletascraper: DEBUG
+    org.hibernate.SQL: DEBUG
