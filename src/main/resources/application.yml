@@ -1,0 +1,47 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: tuboleta-scraper-api
+  profiles:
+    active: dev
+
+  # Configuración H2 Database
+  datasource:
+    url: jdbc:h2:file:./data/tuboleta_scraper
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+# Configuración del scraper
+scraping:
+  tuboleta:
+    base-url: "https://www.tuboleta.com"
+    search-url: "/es/resultados-de-busqueda?ciudades=All&categorias=All&fecha_inicio=&fecha_final=&s=fucks+news"
+    user-agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    timeout: 10000
+    rate-limit: 2000
+
+# Actuator endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,h2
+  endpoint:
+    health:
+      show-details: always

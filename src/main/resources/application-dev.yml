@@ -1,0 +1,18 @@
+scraping:
+  tuboleta:
+    selectors:
+      show-container: "article.bg-grey-light"
+      title: ".content-info .fw-bold span"
+      venue: ".content-info .text-grey"
+      city: ".content-info .text-grey:last-of-type span"
+      date-day: ".content-date .fw-bold.lh-1"
+      date-month: ".content-date .fw-bold:not(.lh-1)"
+      date-weekday: ".content-date span:last-child"
+      event-link: "a.content-link-container"
+
+logging:
+  level:
+    com.armando0405.tuboleta: DEBUG
+    org.springframework.web: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
