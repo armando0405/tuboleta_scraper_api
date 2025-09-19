@@ -7,7 +7,6 @@ import com.armando0405.tuboletascraper.dao.repository.ConsultaInstantaneaReposit
 import com.armando0405.tuboletascraper.dao.repository.RegistroCambiosRepository;
 import com.armando0405.tuboletascraper.dao.repository.ShowInstantaneaRepository;
 import com.armando0405.tuboletascraper.exception.ScrapingException;
-import com.armando0405.tuboletascraper.dao.entity.ApiResponse;
 import com.armando0405.tuboletascraper.dao.entity.Show;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -39,152 +38,122 @@ public class SnapshotService {
     @Value("${scraping.tuboleta.search-url}")
     private String searchUrl;
 
-    // ✅ MÉTODO QUE LLAMA EL CONTROLLER
+    // 🎯 MÉTODO PRINCIPAL - EJECUTA TODO EN SECUENCIA
     @Transactional
-    public Map<String, Object> createNewSnapshot() {
-        log.info("Iniciando creación de nuevo snapshot");
+    public Map<String, Object> ejecutarMonitoreoCompleto() {
+        long startTime = System.currentTimeMillis();
+
+        log.info("========================================");
+        log.info("🚀 INICIANDO MONITOREO COMPLETO DE SHOWS");
+        log.info("========================================");
 
         try {
-            ApiResponse result = procesarScraping();
+            // ✅ PASO 1: HACER SCRAPING
+            log.info("📡 PASO 1: Consultando información de TuBoleta...");
+            List<Show> showsActuales = scrapingService.scrapeShows();
+            log.info("✅ Scraping completado. Shows encontrados: {}", showsActuales.size());
 
-            Map<String, Object> response = new HashMap<>();
-            response.put("hasChanges", result.isHasChanges());
-            response.put("message", result.getMessage());
-            response.put("totalShows", result.getTotalShows());
-            response.put("totalChanges", result.getTotalChanges());
-            response.put("changes", result.getChanges());
-            response.put("lastChecked", result.getLastChecked());
-            response.put("shows", result.getShows());
+            // Mostrar detalles de los shows encontrados
+            showsActuales.forEach(show ->
+                    log.info("   📅 Show: {} en {} - {}", show.getTitulo(), show.getCiudad(), show.getFechaShow())
+            );
 
-            return response;
+            // ✅ PASO 2: GENERAR HASH PARA COMPARACIÓN
+            log.info("🔍 PASO 2: Generando hash para comparación...");
+            String hashActual = generarHash(showsActuales);
+            log.info("✅ Hash generado: {}", hashActual);
 
-        } catch (Exception e) {
-            log.error("Error creando snapshot", e);
-            throw new ScrapingException("Error creando snapshot", e);
-        }
-    }
-
-    // ✅ MÉTODO QUE LLAMA EL CONTROLLER
-    public Map<String, Object> getLatestSnapshot() {
-        log.info("Obteniendo último snapshot");
-
-        try {
+            // ✅ PASO 3: BUSCAR ÚLTIMO SNAPSHOT EN BD
+            log.info("🗄️ PASO 3: Consultando último snapshot en base de datos...");
             Optional<ConsultaInstantanea> ultimoSnapshot = consultaRepository.findTopByOrderByFechaHoraDesc();
 
             if (!ultimoSnapshot.isPresent()) {
-                Map<String, Object> response = new HashMap<>();
-                response.put("message", "No hay snapshots disponibles");
-                response.put("totalShows", 0);
-                response.put("shows", new ArrayList<>());
-                return response;
+                log.info("ℹ️ No se encontraron snapshots anteriores. Esta es la primera ejecución.");
+                return ejecutarPrimeraVez(showsActuales, hashActual, startTime);
             }
 
-            ConsultaInstantanea snapshot = ultimoSnapshot.get();
-            List<ShowInstantanea> showsEntities = showRepository
-                    .findByConsultaInstantaneaIdOrderByTitulo(snapshot.getId());
+            ConsultaInstantanea snapshotAnterior = ultimoSnapshot.get();
+            log.info("✅ Último snapshot encontrado:");
+            log.info("   📅 Fecha: {}", snapshotAnterior.getFechaHora());
+            log.info("   🔢 Total shows: {}", snapshotAnterior.getTotalShows());
+            log.info("   🔑 Hash anterior: {}", snapshotAnterior.getHashContenido());
 
-            List<Show> shows = showsEntities.stream()
-                    .map(this::convertirAShow)
-                    .collect(Collectors.toList());
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("id", snapshot.getId());
-            response.put("fechaHora", snapshot.getFechaHora());
-            response.put("totalShows", snapshot.getTotalShows());
-            response.put("hashContenido", snapshot.getHashContenido());
-            response.put("tiempoEjecucionMs", snapshot.getTiempoEjecucionMs());
-            response.put("shows", shows);
-
-            return response;
-
-        } catch (Exception e) {
-            log.error("Error obteniendo último snapshot", e);
-            throw new ScrapingException("Error obteniendo último snapshot", e);
-        }
-    }
-
-    // ✅ MÉTODO QUE LLAMA EL CONTROLLER
-    public Map<String, Object> compareWithPreviousSnapshot() {
-        log.info("Comparando con snapshot anterior");
-
-        try {
-            List<ConsultaInstantanea> snapshots = consultaRepository
-                    .findTopNByOrderByFechaHoraDesc(2);
-
-            if (snapshots.size() < 2) {
-                Map<String, Object> response = new HashMap<>();
-                response.put("message", "No hay suficientes snapshots para comparar");
-                response.put("totalChanges", 0);
-                response.put("changes", new ArrayList<>());
-                return response;
+            // ✅ PASO 4: COMPARAR HASHES
+            log.info("⚖️ PASO 4: Comparando con snapshot anterior...");
+            if (hashActual.equals(snapshotAnterior.getHashContenido())) {
+                log.info("✅ RESULTADO: Sin cambios detectados");
+                return crearRespuestaSinCambios(snapshotAnterior, startTime);
             }
 
-            ConsultaInstantanea snaphotNuevo = snapshots.get(0);
-            ConsultaInstantanea snapshotAnterior = snapshots.get(1);
-
-            List<String> cambios = detectarCambios(snapshotAnterior, snaphotNuevo);
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("message", cambios.isEmpty() ? "No hay cambios" : "Cambios detectados");
-            response.put("totalChanges", cambios.size());
-            response.put("changes", cambios);
-            response.put("snapshotAnterior", snapshotAnterior.getFechaHora());
-            response.put("snapshotNuevo", snaphotNuevo.getFechaHora());
-
-            return response;
-
-        } catch (Exception e) {
-            log.error("Error comparando snapshots", e);
-            throw new ScrapingException("Error comparando snapshots", e);
-        }
-    }
-
-    // 🔧 MÉTODO INTERNO PRINCIPAL
-    @Transactional
-    public ApiResponse procesarScraping() {
-        long startTime = System.currentTimeMillis();
-        log.info("Iniciando proceso de scraping con validación de cambios");
-
-        try {
-            // 1. Hacer scraping actual
-            List<Show> showsActuales = scrapingService.scrapeShows();
-            String hashActual = generarHash(showsActuales);
-
-            log.debug("Hash generado para shows actuales: {}", hashActual);
-
-            // 2. Obtener último snapshot de la BD
-            Optional<ConsultaInstantanea> ultimoSnapshot =
-                    consultaRepository.findTopByOrderByFechaHoraDesc();
-
-            // 3. Comparar si hay cambios
-            if (ultimoSnapshot.isPresent() &&
-                    hashActual.equals(ultimoSnapshot.get().getHashContenido())) {
-
-                log.info("No se detectaron cambios desde {}", ultimoSnapshot.get().getFechaHora());
-                return crearRespuestaSinCambios(ultimoSnapshot.get(), startTime);
-            }
-
-            // 4. HAY CAMBIOS - Guardar nuevo snapshot
-            log.info("Cambios detectados! Guardando nuevo snapshot...");
+            // ✅ PASO 5: HAY CAMBIOS - GUARDAR NUEVO SNAPSHOT
+            log.info("🆕 PASO 5: ¡Cambios detectados! Guardando nuevo snapshot...");
             ConsultaInstantanea nuevoSnapshot = guardarNuevoSnapshot(showsActuales, hashActual, startTime);
+            log.info("✅ Nuevo snapshot guardado con ID: {}", nuevoSnapshot.getId());
 
-            // 5. Detectar cambios específicos (si no es la primera vez)
-            List<String> cambiosDetectados = new ArrayList<>();
-            if (ultimoSnapshot.isPresent()) {
-                cambiosDetectados = detectarCambios(ultimoSnapshot.get(), nuevoSnapshot);
-                guardarRegistroCambios(ultimoSnapshot.get(), nuevoSnapshot, cambiosDetectados);
-                log.info("Detectados {} cambios específicos", cambiosDetectados.size());
-            } else {
-                log.info("Primera ejecución - no hay cambios anteriores para comparar");
+            // ✅ PASO 6: DETECTAR CAMBIOS ESPECÍFICOS
+            log.info("🔍 PASO 6: Analizando cambios específicos...");
+            List<String> cambiosDetectados = detectarCambios(snapshotAnterior, nuevoSnapshot);
+
+            if (!cambiosDetectados.isEmpty()) {
+                log.info("✅ Cambios detectados:");
+                cambiosDetectados.forEach(cambio -> log.info("   🔸 {}", cambio));
+
+                // Guardar registro de cambios
+                guardarRegistroCambios(snapshotAnterior, nuevoSnapshot, cambiosDetectados);
+                log.info("✅ Registro de cambios guardado en BD");
             }
 
-            // 6. Crear respuesta con cambios
-            return crearRespuestaConCambios(nuevoSnapshot, cambiosDetectados, startTime);
+            // ✅ PASO 7: CREAR RESPUESTA FINAL
+            log.info("📋 PASO 7: Preparando respuesta final...");
+            Map<String, Object> respuesta = crearRespuestaConCambios(cambiosDetectados, startTime);
+
+            log.info("🎉 MONITOREO COMPLETADO EXITOSAMENTE");
+            log.info("========================================");
+
+            return respuesta;
 
         } catch (Exception e) {
-            log.error("Error procesando scraping", e);
-            throw new ScrapingException("Error procesando scraping", e);
+            log.error("❌ ERROR EN MONITOREO: {}", e.getMessage(), e);
+            throw new ScrapingException("Error en monitoreo completo", e);
         }
+    }
+
+    private Map<String, Object> ejecutarPrimeraVez(List<Show> shows, String hash, long startTime) {
+        log.info("🏁 Primera ejecución: Guardando snapshot inicial...");
+
+        ConsultaInstantanea primerSnapshot = guardarNuevoSnapshot(shows, hash, startTime);
+        log.info("✅ Snapshot inicial guardado con ID: {}", primerSnapshot.getId());
+
+        Map<String, Object> respuesta = new HashMap<>();
+        respuesta.put("esPrimeraEjecucion", true);
+        respuesta.put("message", "Primera ejecución completada. Snapshot inicial guardado.");
+        respuesta.put("totalShows", shows.size());
+        respuesta.put("executionTimeMs", System.currentTimeMillis() - startTime);
+
+        log.info("🎉 Primera ejecución completada exitosamente");
+        return respuesta;
+    }
+
+    private Map<String, Object> crearRespuestaSinCambios(ConsultaInstantanea ultimoSnapshot, long startTime) {
+        Map<String, Object> respuesta = new HashMap<>();
+        respuesta.put("hayCambios", false);
+        respuesta.put("message", String.format("Sin cambios desde %s", ultimoSnapshot.getFechaHora()));
+        respuesta.put("ultimaActualizacion", ultimoSnapshot.getFechaHora());
+        respuesta.put("totalShows", ultimoSnapshot.getTotalShows());
+        respuesta.put("executionTimeMs", System.currentTimeMillis() - startTime);
+
+        return respuesta;
+    }
+
+    private Map<String, Object> crearRespuestaConCambios(List<String> cambios, long startTime) {
+        Map<String, Object> respuesta = new HashMap<>();
+        respuesta.put("hayCambios", true);
+        respuesta.put("message", "¡Cambios detectados!");
+        respuesta.put("totalCambios", cambios.size());
+        respuesta.put("cambios", cambios);
+        respuesta.put("executionTimeMs", System.currentTimeMillis() - startTime);
+
+        return respuesta;
     }
 
     private String generarHash(List<Show> shows) {
@@ -192,7 +161,6 @@ public class SnapshotService {
             return DigestUtils.md5Hex("empty");
         }
 
-        // Ordenar shows para hash consistente
         String contenido = shows.stream()
                 .sorted(Comparator.comparing(Show::getShowUniqueId))
                 .map(show -> String.format("%s|%s|%s|%s",
@@ -202,15 +170,11 @@ public class SnapshotService {
                         show.getFechaShow()))
                 .collect(Collectors.joining(","));
 
-        String hash = DigestUtils.md5Hex(contenido);
-        log.debug("Contenido para hash: {}", contenido.substring(0, Math.min(100, contenido.length())) + "...");
-
-        return hash;
+        return DigestUtils.md5Hex(contenido);
     }
 
     @Transactional
     private ConsultaInstantanea guardarNuevoSnapshot(List<Show> shows, String hash, long startTime) {
-        // Guardar consulta principal
         ConsultaInstantanea consulta = ConsultaInstantanea.builder()
                 .fechaHora(LocalDateTime.now())
                 .totalShows(shows.size())
@@ -220,18 +184,13 @@ public class SnapshotService {
                 .build();
 
         ConsultaInstantanea savedConsulta = consultaRepository.save(consulta);
-        log.debug("Consulta guardada con ID: {}", savedConsulta.getId());
 
-        // Guardar shows individuales
         List<ShowInstantanea> showsEntities = shows.stream()
                 .map(show -> convertirAEntity(show, savedConsulta))
                 .collect(Collectors.toList());
 
-        List<ShowInstantanea> savedShows = showRepository.saveAll(showsEntities);
-        log.debug("Guardados {} shows en BD", savedShows.size());
-
-        // Cargar shows en la consulta para uso posterior
-        savedConsulta.setShows(savedShows);
+        showRepository.saveAll(showsEntities);
+        savedConsulta.setShows(showsEntities);
 
         return savedConsulta;
     }
@@ -252,25 +211,17 @@ public class SnapshotService {
     private List<String> detectarCambios(ConsultaInstantanea anterior, ConsultaInstantanea nueva) {
         List<String> cambios = new ArrayList<>();
 
-        // Cargar shows si no están cargados
-        List<ShowInstantanea> showsAnteriores = anterior.getShows();
-        if (showsAnteriores == null || showsAnteriores.isEmpty()) {
-            showsAnteriores = showRepository.findByConsultaInstantaneaIdOrderByTitulo(anterior.getId());
-        }
-
+        List<ShowInstantanea> showsAnteriores = showRepository
+                .findByConsultaInstantaneaIdOrderByTitulo(anterior.getId());
         List<ShowInstantanea> showsNuevos = nueva.getShows();
-        if (showsNuevos == null || showsNuevos.isEmpty()) {
-            showsNuevos = showRepository.findByConsultaInstantaneaIdOrderByTitulo(nueva.getId());
-        }
 
-        // Convertir a Maps para comparación eficiente
         Map<String, ShowInstantanea> mapaAnterior = showsAnteriores.stream()
                 .collect(Collectors.toMap(ShowInstantanea::getShowIdUnico, s -> s));
 
         Map<String, ShowInstantanea> mapaNuevo = showsNuevos.stream()
                 .collect(Collectors.toMap(ShowInstantanea::getShowIdUnico, s -> s));
 
-        // Detectar shows agregados
+        // Shows agregados
         for (String showId : mapaNuevo.keySet()) {
             if (!mapaAnterior.containsKey(showId)) {
                 ShowInstantanea show = mapaNuevo.get(showId);
@@ -279,7 +230,7 @@ public class SnapshotService {
             }
         }
 
-        // Detectar shows eliminados
+        // Shows eliminados
         for (String showId : mapaAnterior.keySet()) {
             if (!mapaNuevo.containsKey(showId)) {
                 ShowInstantanea show = mapaAnterior.get(showId);
@@ -288,20 +239,18 @@ public class SnapshotService {
             }
         }
 
-        // Detectar shows modificados
+        // Shows modificados
         for (String showId : mapaNuevo.keySet()) {
             if (mapaAnterior.containsKey(showId)) {
                 ShowInstantanea anteriorShow = mapaAnterior.get(showId);
                 ShowInstantanea nuevoShow = mapaNuevo.get(showId);
 
-                // Comparar fecha
                 if (!Objects.equals(anteriorShow.getFechaShow(), nuevoShow.getFechaShow())) {
                     cambios.add(String.format("Modificado: %s en %s - fecha cambió de %s a %s",
                             nuevoShow.getTitulo(), nuevoShow.getCiudad(),
                             anteriorShow.getFechaShow(), nuevoShow.getFechaShow()));
                 }
 
-                // Comparar venue
                 if (!Objects.equals(anteriorShow.getVenue(), nuevoShow.getVenue())) {
                     cambios.add(String.format("Modificado: %s en %s - venue cambió de %s a %s",
                             nuevoShow.getTitulo(), nuevoShow.getCiudad(),
@@ -315,9 +264,7 @@ public class SnapshotService {
 
     @Transactional
     private void guardarRegistroCambios(ConsultaInstantanea anterior, ConsultaInstantanea nueva, List<String> cambios) {
-        if (cambios.isEmpty()) {
-            return;
-        }
+        if (cambios.isEmpty()) return;
 
         RegistroCambios registro = RegistroCambios.builder()
                 .consultaAnterior(anterior)
@@ -327,67 +274,5 @@ public class SnapshotService {
                 .build();
 
         cambiosRepository.save(registro);
-        log.debug("Registro de cambios guardado con {} modificaciones", cambios.size());
-    }
-
-    private ApiResponse crearRespuestaSinCambios(ConsultaInstantanea ultimoSnapshot, long startTime) {
-        // Cargar shows del último snapshot
-        List<ShowInstantanea> showsEntities = showRepository
-                .findByConsultaInstantaneaIdOrderByTitulo(ultimoSnapshot.getId());
-
-        List<Show> shows = showsEntities.stream()
-                .map(this::convertirAShow)
-                .collect(Collectors.toList());
-
-        return ApiResponse.builder()
-                .hasChanges(false)
-                .message(String.format("No hay cambios desde %s", ultimoSnapshot.getFechaHora()))
-                .totalShows(shows.size())
-                .lastChecked(ultimoSnapshot.getFechaHora())
-                .executionTimeMs(System.currentTimeMillis() - startTime)
-                .shows(shows)
-                .build();
-    }
-
-    private ApiResponse crearRespuestaConCambios(ConsultaInstantanea nuevoSnapshot, List<String> cambios, long startTime) {
-        List<Show> shows = nuevoSnapshot.getShows().stream()
-                .map(this::convertirAShow)
-                .collect(Collectors.toList());
-
-        return ApiResponse.builder()
-                .hasChanges(true)
-                .message("¡Cambios detectados!")
-                .totalShows(shows.size())
-                .totalChanges(cambios.size())
-                .changes(cambios)
-                .lastChecked(nuevoSnapshot.getFechaHora())
-                .executionTimeMs(nuevoSnapshot.getTiempoEjecucionMs())
-                .shows(shows)
-                .build();
-    }
-
-    private Show convertirAShow(ShowInstantanea entity) {
-        return Show.builder()
-                .showUniqueId(entity.getShowIdUnico())
-                .titulo(entity.getTitulo())
-                .venue(entity.getVenue())
-                .ciudad(entity.getCiudad())
-                .fechaShow(entity.getFechaShow())
-                .horaShow(entity.getHoraShow())
-                .urlFuente(entity.getUrlFuente())
-                .build();
-    }
-
-    // Métodos utilitarios para estadísticas
-    public long getTotalSnapshots() {
-        return consultaRepository.count();
-    }
-
-    public long getTotalCambiosDetectados() {
-        return cambiosRepository.count();
-    }
-
-    public Optional<ConsultaInstantanea> getUltimoSnapshot() {
-        return consultaRepository.findTopByOrderByFechaHoraDesc();
     }
 }
