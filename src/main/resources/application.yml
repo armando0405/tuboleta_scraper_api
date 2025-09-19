@@ -54,8 +54,8 @@ management:
 scheduler:
   monitoring:
     enabled: true              # true = activado, false = desactivado
-    interval-minutes: 30       # Ejecutar cada 30 minutos
-    initial-delay-minutes: 2   # Esperar x minutos después del startup
+    interval-minutes: 1       # Ejecutar cada x minutos
+    initial-delay-minutes: 0   # Esperar x minutos después del startup
 
 #  NUEVA SECCIÓN - Logs más detallados para el scheduler
 logging:
