@@ -50,8 +50,17 @@ management:
     health:
       show-details: always
 
-# Configuración de logging (opcional)
+# NUEVA SECCIÓN - Configuración del scheduler automático
+scheduler:
+  monitoring:
+    enabled: true              # true = activado, false = desactivado
+    interval-minutes: 30       # Ejecutar cada 30 minutos
+    initial-delay-minutes: 2   # Esperar x minutos después del startup
+
+#  NUEVA SECCIÓN - Logs más detallados para el scheduler
 logging:
   level:
-    com.armando0405.tuboletascraper: DEBUG
-    org.hibernate.SQL: DEBUG
+    com.armando0405.tuboletascraper.scheduler: INFO
+    com.armando0405.tuboletascraper.service.SnapshotService: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %5p [%t] %-40.40logger{39} : %m%n"
