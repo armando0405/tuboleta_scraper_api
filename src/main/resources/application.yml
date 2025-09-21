@@ -22,10 +22,10 @@ spring:
   jpa:
     hibernate:
       ddl-auto: create
-    show-sql: false
+    show-sql: true
     properties:
       hibernate:
-        format_sql: false
+        format_sql: true
 
   jackson:
     time-zone: America/Bogota
@@ -34,8 +34,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: armandomorenoalvarez5@gmail.com
-    password: "hcqu zljb knzh ncbg"  # App Password de Gmail
+    username: alvarezfrankil690@gmail.com
+    password: "duck oagx obui xmwt"  # App Password de Gmail
     properties:
       mail:
         smtp:
@@ -83,8 +83,8 @@ management:
 scheduler:
   monitoring:
     enabled: true              # true = activado, false = desactivado
-    interval-minutes: 10       # Ejecutar cada x minutos
-    initial-delay-minutes: 1   # Esperar x minutos después del startup
+    interval-minutes: 3       # Ejecutar cada x minutos
+    initial-delay-minutes: 0   # Esperar x minutos después del startup
 
 #  NUEVA SECCIÓN - Logs más detallados para el scheduler
 logging:
