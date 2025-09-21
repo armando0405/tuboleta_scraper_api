@@ -1,6 +1,7 @@
 package com.armando0405.tuboletascraper.controller;
 
 import com.armando0405.tuboletascraper.dao.entity.Show;
+import com.armando0405.tuboletascraper.service.EmailNotificationService;
 import com.armando0405.tuboletascraper.service.ScrapingService;
 import com.armando0405.tuboletascraper.service.SnapshotService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +23,9 @@ public class ShowController {
 
     @Autowired
     private ScrapingService scrapingService;
+
+    @Autowired(required = false)
+    private EmailNotificationService emailNotificationService;
 
     // extraccion informacion de shows
     @GetMapping("/scraping")
@@ -82,4 +86,115 @@ public class ShowController {
         );
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/test-email")
+    public ResponseEntity<Map<String, Object>> testEmail() {
+        if (emailNotificationService == null) {
+            Map<String, Object> response = Map.of(
+                    "success", false,
+                    "message", "Servicio de correo no habilitado",
+                    "tip", "Habilitar en application.yml: notifications.email.enabled=true"
+            );
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        try {
+            emailNotificationService.enviarCorreoDePrueba();
+
+            Map<String, Object> response = Map.of(
+                    "success", true,
+                    "message", "Correo de prueba enviado exitosamente",
+                    "destinatario", "iu443805@gmail.com",
+                    "timestamp", java.time.LocalDateTime.now().toString()
+            );
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            Map<String, Object> response = Map.of(
+                    "success", false,
+                    "message", "Error enviando correo de prueba: " + e.getMessage(),
+                    "error", e.getClass().getSimpleName()
+            );
+            return ResponseEntity.status(500).body(response);
+        }
+    }
+
+    @GetMapping("/test-primera-ejecucion")
+    public ResponseEntity<Map<String, Object>> testPrimeraEjecucion() {
+        if (emailNotificationService == null) {
+            Map<String, Object> response = Map.of(
+                    "success", false,
+                    "message", "Servicio de correo no habilitado"
+            );
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        try {
+            // Simular cambios para probar el correo
+            List<String> cambiosFicticios = List.of(
+                    "Agregado: FUCKS NEWS en Teatro Metropolitan - Bogotá - 2024-03-15",
+                    "Modificado: FUCKS NEWS en Royal Center - Bogotá - fecha cambió de 2024-03-10 a 2024-03-12",
+                    "Eliminado: FUCKS NEWS en Movistar Arena - Bogotá"
+            );
+
+            emailNotificationService.enviarNotificacionPrimeraEjecucion(5);
+
+            Map<String, Object> response = Map.of(
+                    "success", true,
+                    "message", "Correos de cambios y primera ejecución enviados exitosamente",
+                    "cambiosSimulados", cambiosFicticios,
+                    "totalShows", 7,
+                    "simulacion", "5 shows encontrados",
+                    "timestamp", java.time.LocalDateTime.now().toString()
+            );
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            Map<String, Object> response = Map.of(
+                    "success", false,
+                    "message", "Error enviando correo: " + e.getMessage()
+            );
+            return ResponseEntity.status(500).body(response);
+        }
+    }
+
+    @GetMapping("/test-cambios-email")
+    public ResponseEntity<Map<String, Object>> testCambiosEmail() {
+        if (emailNotificationService == null) {
+            Map<String, Object> response = Map.of(
+                    "success", false,
+                    "message", "Servicio de correo no habilitado"
+            );
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        try {
+            // Simular cambios para probar el correo
+            List<String> cambiosFicticios = List.of(
+                    "Agregado: FUCKS NEWS en Teatro Metropolitan - Bogotá - 2024-03-15",
+                    "Modificado: FUCKS NEWS en Royal Center - Bogotá - fecha cambió de 2024-03-10 a 2024-03-12",
+                    "Eliminado: FUCKS NEWS en Movistar Arena - Bogotá"
+            );
+
+            emailNotificationService.enviarNotificacionCambios(cambiosFicticios, 7);
+
+            Map<String, Object> response = Map.of(
+                    "success", true,
+                    "message", "Correo de cambios enviado exitosamente",
+                    "cambiosSimulados", cambiosFicticios,
+                    "totalShows", 7,
+                    "timestamp", java.time.LocalDateTime.now().toString()
+            );
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            Map<String, Object> response = Map.of(
+                    "success", false,
+                    "message", "Error enviando correo: " + e.getMessage(),
+                    "error", e.getClass().getSimpleName()
+            );
+            return ResponseEntity.status(500).body(response);
+        }
+    }
+
 }

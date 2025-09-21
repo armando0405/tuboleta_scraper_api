@@ -31,6 +31,35 @@ spring:
     time-zone: America/Bogota
     date-format: yyyy-MM-dd HH:mm:ss
 
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: armandomorenoalvarez5@gmail.com
+    password: "hcqu zljb knzh ncbg"  # App Password de Gmail
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+        debug: false  # Cambiar a true si necesitas debug detallado
+
+notifications:
+  email:
+    enabled: true  # true = activadas, false = desactivadas
+    from: "Fucks News Bot <armandomorenoalvarz5@gmail.com>"
+    to: "iu443805@gmail.com"
+    subject-prefix: "[🎵 FUCKS NEWS ALERT]"
+
+    # Configuración de reintentos
+    retry:
+      max-attempts: 3
+      delay-seconds: 30
+
 # Configuración del scraper
 scraping:
   tuboleta:
@@ -55,7 +84,7 @@ scheduler:
   monitoring:
     enabled: true              # true = activado, false = desactivado
     interval-minutes: 10       # Ejecutar cada x minutos
-    initial-delay-minutes: 0   # Esperar x minutos después del startup
+    initial-delay-minutes: 1   # Esperar x minutos después del startup
 
 #  NUEVA SECCIÓN - Logs más detallados para el scheduler
 logging:

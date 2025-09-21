@@ -1,5 +1,6 @@
 package com.armando0405.tuboletascraper.scheduler;
 
+import com.armando0405.tuboletascraper.service.EmailNotificationService;
 import com.armando0405.tuboletascraper.service.SnapshotService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +21,9 @@ public class MonitoringScheduler {
 
     @Autowired
     private SnapshotService snapshotService;
+
+    @Autowired(required = false)  // required = false para cuando las notificaciones estén deshabilitadas
+    private EmailNotificationService emailNotificationService;
 
     @Value("${scheduler.monitoring.enabled:true}")
     private boolean schedulingEnabled;
@@ -105,6 +109,9 @@ public class MonitoringScheduler {
             log.info("🏁 [AUTO] PRIMERA EJECUCIÓN COMPLETADA");
             log.info("📊 [AUTO] Total shows guardados: {}", resultado.get("totalShows"));
 
+            // 📧 ENVIAR NOTIFICACIÓN DE PRIMERA EJECUCIÓN
+            enviarNotificacionPrimeraEjecucion(resultado);
+
         } else if (hayCambios) {
             log.info("🚨 [AUTO] ¡¡¡ CAMBIOS DETECTADOS AUTOMÁTICAMENTE !!!");
             log.info("🔢 [AUTO] Total cambios: {}", resultado.get("totalCambios"));
@@ -119,8 +126,8 @@ public class MonitoringScheduler {
                 }
             }
 
-            // 🔔 AQUÍ PUEDES AGREGAR NOTIFICACIONES FUTURAS
-            // enviarNotificacionCambios(cambios);
+            // 📧 ENVIAR NOTIFICACIÓN DE CAMBIOS
+            enviarNotificacionCambios(cambios, resultado);
 
         } else {
             log.info("✅ [AUTO] Sin cambios detectados en monitoreo automático");
@@ -137,14 +144,49 @@ public class MonitoringScheduler {
     /**
      * 🔔 MÉTODO PARA FUTURAS NOTIFICACIONES (PLACEHOLDER)
      */
-    private void enviarNotificacionCambios(List<String> cambios) {
-        // TODO: Implementar notificaciones (Email, Slack, Telegram, etc.)
-        log.info("📧 [AUTO] Enviando notificaciones de cambios... (No implementado aún)");
+    private void enviarNotificacionPrimeraEjecucion(Map<String, Object> resultado) {
+        if (emailNotificationService == null) {
+            log.debug("📧 [AUTO] Servicio de correo no disponible (deshabilitado en configuración)");
+            return;
+        }
+
+        try {
+            log.info("📧 [AUTO] Enviando notificación de primera ejecución...");
+
+            Integer totalShows = (Integer) resultado.getOrDefault("totalShows", 0);
+            emailNotificationService.enviarNotificacionPrimeraEjecucion(totalShows);
+
+            log.info("✅ [AUTO] Notificación de primera ejecución enviada exitosamente");
+
+        } catch (Exception e) {
+            log.error("❌ [AUTO] Error enviando notificación de primera ejecución", e);
+            // No lanzar excepción para no interrumpir el flujo principal
+        }
     }
 
     /**
-     * 📊 MÉTODO MANUAL PARA TESTING (OPCIONAL)
+     * 🚨 ENVIAR NOTIFICACIÓN DE CAMBIOS
      */
+    private void enviarNotificacionCambios(List<String> cambios, Map<String, Object> resultado) {
+        if (emailNotificationService == null) {
+            log.debug("📧 [AUTO] Servicio de correo no disponible (deshabilitado en configuración)");
+            return;
+        }
+
+        try {
+            log.info("📧 [AUTO] Enviando notificación de cambios por correo...");
+
+            Integer totalShows = (Integer) resultado.getOrDefault("totalShows", 0);
+            emailNotificationService.enviarNotificacionCambios(cambios, totalShows);
+
+            log.info("✅ [AUTO] Notificación de cambios enviada exitosamente");
+
+        } catch (Exception e) {
+            log.error("❌ [AUTO] Error enviando notificación de cambios", e);
+            // No lanzar excepción para no interrumpir el flujo principal
+        }
+    }
+
     public void ejecutarMonitoreoManual() {
         log.info("🔧 [MANUAL] Ejecutando monitoreo manual...");
 
