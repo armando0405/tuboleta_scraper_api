@@ -22,10 +22,10 @@ spring:
   jpa:
     hibernate:
       ddl-auto: create
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
 
   jackson:
     time-zone: America/Bogota
@@ -54,7 +54,7 @@ management:
 scheduler:
   monitoring:
     enabled: true              # true = activado, false = desactivado
-    interval-minutes: 1       # Ejecutar cada x minutos
+    interval-minutes: 10       # Ejecutar cada x minutos
     initial-delay-minutes: 0   # Esperar x minutos después del startup
 
 #  NUEVA SECCIÓN - Logs más detallados para el scheduler

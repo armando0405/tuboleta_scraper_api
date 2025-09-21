@@ -52,7 +52,7 @@ public class MonitoringScheduler {
     }
 
     /**
-     * 🕐 MÉTODO PRINCIPAL: Se ejecuta automáticamente cada X minutos
+     *  MÉTODO PRINCIPAL: Se ejecuta automáticamente cada X minutos
      */
     @Scheduled(
             initialDelayString = "#{${scheduler.monitoring.initial-delay-minutes:2} * 60 * 1000}",  // Delay inicial
@@ -95,7 +95,7 @@ public class MonitoringScheduler {
     }
 
     /**
-     * 📊 ANALIZAR Y MOSTRAR RESULTADOS
+     *  ANALIZAR Y MOSTRAR RESULTADOS
      */
     private void analizarResultados(Map<String, Object> resultado, long totalTime) {
         Boolean hayCambios = (Boolean) resultado.getOrDefault("hayCambios", false);
