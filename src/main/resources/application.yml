@@ -83,7 +83,7 @@ management:
 scheduler:
   monitoring:
     enabled: ${SCHEDULER_ENABLED:true}
-    interval-minutes: ${SCHEDULER_INTERVAL:30}  # 30 minutos por defecto
+    interval-minutes: ${SCHEDULER_INTERVAL:20}  # 30 minutos por defecto
     initial-delay-minutes: ${SCHEDULER_INITIAL_DELAY:2}
 
 # Logging optimizado para producción
