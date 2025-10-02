@@ -1,42 +1,17 @@
-server:
-  port: ${PORT:8080}  # Render.com usa variable de entorno PORT
-
 spring:
   application:
     name: tuboleta-scraper-api
-  profiles:
-    active: dev
+  #profiles:
+  #  active: prod
 
-
-  # Base de datos H2 para producción
-  datasource:
-    url: jdbc:h2:file:/app/data/tuboleta_scraper_prod
-    driver-class-name: org.h2.Driver
-    username: sa
-    password: ${H2_PASSWORD:}
-
-  h2:
-    console:
-      enabled: false  # ️ Deshabilitado en producción por seguridad
-
-  jpa:
-    hibernate:
-      ddl-auto: create  #  Cambio importante: update en vez de create
-    show-sql: false     # ️ Logs SQL deshabilitados en producción
-    properties:
-      hibernate:
-        format_sql: false
 
   jackson:
     time-zone: America/Bogota
     date-format: yyyy-MM-dd HH:mm:ss
 
-  # Configuración de correo (usando variables de entorno)
   mail:
     host: smtp.gmail.com
     port: 587
-    username: ${EMAIL_USERNAME:alvarezfrankil690@gmail.com}
-    password: ${EMAIL_PASSWORD:duck oagx obui xmwt}
     properties:
       mail:
         smtp:
@@ -44,55 +19,31 @@ spring:
           starttls:
             enable: true
             required: true
-          connectiontimeout: 10000
-          timeout: 10000
-          writetimeout: 10000
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
         debug: false
 
-# Configuración de notificaciones
 notifications:
   email:
-    enabled: ${EMAIL_NOTIFICATIONS_ENABLED:true}
-    from: ${EMAIL_FROM:Fucks News Bot <alvarezfrankil690@gmail.com>}
-    to: ${EMAIL_TO:iu443805@gmail.com}
-    subject-prefix: ${EMAIL_SUBJECT_PREFIX:[ FUCKS NEWS ALERT]}
+    subject-prefix: "[🎵 FUCKS NEWS ALERT]"
     retry:
-      max-attempts: ${EMAIL_RETRY_ATTEMPTS:3}
-      delay-seconds: ${EMAIL_RETRY_DELAY:30}
+      max-attempts: 3
+      delay-seconds: 30
 
-# Configuración del scraper
 scraping:
   tuboleta:
     base-url: "https://www.tuboleta.com"
     search-url: "/es/resultados-de-busqueda?ciudades=All&categorias=All&fecha_inicio=&fecha_final=&s=fucks+news"
     user-agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-    timeout: ${SCRAPING_TIMEOUT:15000}  # Más tiempo para conexiones lentas
-    rate-limit: 3000
+    rate-limit: 2000
 
-# Actuator (monitoreo)
+
 management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,metrics
   endpoint:
     health:
-      show-details: when-authorized
-
-# Scheduler con configuración para producción
-scheduler:
-  monitoring:
-    enabled: ${SCHEDULER_ENABLED:true}
-    interval-minutes: ${SCHEDULER_INTERVAL:20}  # 30 minutos por defecto
-    initial-delay-minutes: ${SCHEDULER_INITIAL_DELAY:2}
-
-# Logging optimizado para producción
-logging:
-  level:
-    root: INFO
-    com.armando0405.tuboletascraper: INFO
-    org.springframework: WARN
-    org.hibernate: WARN
-    org.apache: WARN
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+      show-details: always

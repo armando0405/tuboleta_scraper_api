@@ -1,0 +1,69 @@
+
+# ============================================
+# CONFIGURACIÓN PARA PRODUCCIÓN
+# ============================================
+# Usar con: SPRING_PROFILES_ACTIVE=prod
+# O en Docker: CMD ["java", "-Dspring.profiles.active=prod", "-jar", "app.jar"]
+
+server:
+  port: ${PORT:8080}
+
+spring:
+  datasource:
+    url: jdbc:h2:file:/app/data/tuboleta_scraper_prod
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ${H2_PASSWORD:}
+
+  h2:
+    console:
+      enabled: false
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+
+  mail:
+    username: ${EMAIL_USERNAME:alvarezfrankil690@gmail.com}
+    password: ${EMAIL_PASSWORD:duck oagx obui xmwt}
+
+notifications:
+  email:
+    enabled: ${EMAIL_NOTIFICATIONS_ENABLED:true}
+    from: ${EMAIL_FROM:Fucks News Bot <alvarezfrankil690@gmail.com>}
+    to: ${EMAIL_TO:iu443805@gmail.com}
+
+scraping:
+  tuboleta:
+    timeout: ${SCRAPING_TIMEOUT:15000}
+
+scheduler:
+  monitoring:
+    enabled: ${SCHEDULER_ENABLED:true}
+    interval-minutes: ${SCHEDULER_INTERVAL:15}
+    initial-delay-minutes: ${SCHEDULER_INITIAL_DELAY:2}
+
+logging:
+  level:
+    root: INFO
+    com.armando0405.tuboletascraper: INFO
+    com.armando0405.tuboletascraper.scheduler: INFO
+    com.armando0405.tuboletascraper.service: INFO
+    org.springframework: WARN
+    org.hibernate: WARN
+    org.apache: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized

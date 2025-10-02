@@ -32,4 +32,4 @@ RUN mkdir -p /app/data
 EXPOSE 8080
 
 # Comando para ejecutar la aplicación
-CMD ["java", "-jar", "target/tuboleta-scraper-0.0.1-SNAPSHOT.jar"]
+CMD ["java", "-Dspring.profiles.active=prod", "-jar", "target/tuboleta-scraper-0.0.1-SNAPSHOT.jar"]
