@@ -49,6 +49,10 @@ scheduler:
     interval-minutes: 3
     initial-delay-minutes: 0
 
+keepalive:
+  interval-minutes: 1
+  url: "http://localhost:8080"
+
 logging:
   level:
     root: INFO
