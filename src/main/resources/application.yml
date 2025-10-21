@@ -1,8 +1,8 @@
 spring:
   application:
     name: tuboleta-scraper-api
-  profiles:
-    active: prod
+#  profiles:
+#    active: prod
 
 
   jackson:
