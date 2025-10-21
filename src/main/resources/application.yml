@@ -1,8 +1,8 @@
 spring:
   application:
     name: tuboleta-scraper-api
-  #profiles:
-  #  active: prod
+  profiles:
+    active: prod
 
 
   jackson:
@@ -37,6 +37,11 @@ scraping:
     search-url: "/es/resultados-de-busqueda?ciudades=All&categorias=All&fecha_inicio=&fecha_final=&s=fucks+news"
     user-agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     rate-limit: 2000
+
+keepalive:
+  enabled: true
+  url: http://localhost:8080
+
 
 
 management:

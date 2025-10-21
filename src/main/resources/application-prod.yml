@@ -15,9 +15,14 @@ spring:
     username: sa
     password: ${H2_PASSWORD:}
 
+#  h2:
+#    console:
+#      enabled: false
+
   h2:
     console:
-      enabled: false
+      enabled: true
+      path: /h2-console
 
   jpa:
     hibernate:
@@ -46,6 +51,10 @@ scheduler:
     enabled: ${SCHEDULER_ENABLED:true}
     interval-minutes: ${SCHEDULER_INTERVAL:15}
     initial-delay-minutes: ${SCHEDULER_INITIAL_DELAY:2}
+
+keepalive:
+  interval-minutes: 10
+  url: ${RENDER_EXTERNAL_URL:http://localhost:8080}
 
 logging:
   level:
