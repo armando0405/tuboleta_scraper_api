@@ -1,72 +1,82 @@
 
-# ============================================
-# CONFIGURACIÓN PARA DESARROLLO
-# ============================================
-# Usar con: SPRING_PROFILES_ACTIVE=dev
-# O con: ./mvnw spring-boot:run -Dspring.profiles.active=dev
+  # ============================================
+  # CONFIGURACIÓN PARA DESARROLLO
+  # ============================================
+  # Usar con: SPRING_PROFILES_ACTIVE=dev
+  # O con: ./mvnw spring-boot:run -Dspring.profiles.active=dev
 
-server:
-  port: 8080
+  server:
+    port: 8080
 
-spring:
-  datasource:
-    url: jdbc:h2:file:./data/tuboleta_scraper_dev
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
+  spring:
+    datasource:
+      url: jdbc:h2:file:./data/tuboleta_scraper_dev
+      driver-class-name: org.h2.Driver
+      username: sa
+      password:
 
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
+    h2:
+      console:
+        enabled: true
+        path: /h2-console
 
-  jpa:
-    hibernate:
-      ddl-auto: create
-    show-sql: true
-    properties:
+    jpa:
       hibernate:
-        format_sql: true
+        ddl-auto: create
+      show-sql: true
+      properties:
+        hibernate:
+          format_sql: true
+    mail:
+      host: smtp.gmail.com
+      port: 465  # ← Cambiar de 587 a 465
+      username: alvarezfrankil690@gmail.com
+      password: "duck oagx obui xmwt"
+      properties:
+        mail:
+          smtp:
+            auth: true
+            ssl:
+              enable: true
+            connectiontimeout: 10000
+            timeout: 10000
+            writetimeout: 10000
 
-  mail:
-    username: alvarezfrankil690@gmail.com
-    password: "duck oagx obui xmwt"
-
-notifications:
-  email:
-    enabled: true
-    from: "Dev Bot <alvarezfrankil690@gmail.com>"
-    to: "iu443805@gmail.com"
+  notifications:
+    email:
+      enabled: true
+      from: "Dev Bot <alvarezfrankil690@gmail.com>"
+      to: "iu443805@gmail.com"
 
 
-scraping:
-  tuboleta:
-    timeout: 10000
+  scraping:
+    tuboleta:
+      timeout: 10000
 
-scheduler:
-  monitoring:
-    enabled: true
-    interval-minutes: 3
-    initial-delay-minutes: 0
+  scheduler:
+    monitoring:
+      enabled: true
+      interval-minutes: 3
+      initial-delay-minutes: 0
 
-keepalive:
-  interval-minutes: 1
-  url: "http://localhost:8080"
+  keepalive:
+    interval-minutes: 1
+    url: "http://localhost:8080"
 
-logging:
-  level:
-    root: INFO
-    com.armando0405.tuboletascraper: DEBUG
-    com.armando0405.tuboletascraper.scheduler: INFO
-    com.armando0405.tuboletascraper.service: DEBUG
-    org.springframework.web: INFO
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %5p [%t] %-40.40logger{39} : %m%n"
+  logging:
+    level:
+      root: INFO
+      com.armando0405.tuboletascraper: DEBUG
+      com.armando0405.tuboletascraper.scheduler: INFO
+      com.armando0405.tuboletascraper.service: DEBUG
+      org.springframework.web: INFO
+      org.hibernate.SQL: DEBUG
+      org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    pattern:
+      console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %5p [%t] %-40.40logger{39} : %m%n"
 
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics,h2
+  management:
+    endpoints:
+      web:
+        exposure:
+          include: health,info,metrics,h2

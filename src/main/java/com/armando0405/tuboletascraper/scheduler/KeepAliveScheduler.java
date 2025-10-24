@@ -61,7 +61,7 @@ public class KeepAliveScheduler {
      * 4. Loguea resultado
      */
     @Scheduled(
-            initialDelayString = "#{60 * 1000}",  // Esperar 1 minuto después del startup
+            initialDelayString = "#{${initial-delay-minutes:10} * 60 * 1000}",
             fixedRateString = "#{${keepalive.interval-minutes:10} * 60 * 1000}"  // Cada X minutos
     )
     public void mantenerActivo() {

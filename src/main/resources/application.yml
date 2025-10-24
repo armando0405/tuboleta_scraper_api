@@ -1,52 +1,39 @@
-spring:
-  application:
-    name: tuboleta-scraper-api
-#  profiles:
-#    active: prod
+  spring:
+    application:
+      name: tuboleta-scraper-api
+    profiles:
+      active: prod
 
 
-  jackson:
-    time-zone: America/Bogota
-    date-format: yyyy-MM-dd HH:mm:ss
+    jackson:
+      time-zone: America/Bogota
+      date-format: yyyy-MM-dd HH:mm:ss
 
-  mail:
-    host: smtp.gmail.com
-    port: 465  # ← Cambiar de 587 a 465
-    properties:
-      mail:
-        smtp:
-          auth: true
-          ssl:
-            enable: true  # ← SSL en lugar de STARTTLS
-          connectiontimeout: 10000  # ← Aumentar timeout
-          timeout: 10000
-          writetimeout: 10000
+  notifications:
+    email:
+      subject-prefix: "[ FUCKS NEW  ] "
+      retry:
+        max-attempts: 3
+        delay-seconds: 30
 
-notifications:
-  email:
-    subject-prefix: "[🎵 FUCKS NEWS ALERT]"
-    retry:
-      max-attempts: 3
-      delay-seconds: 30
+  scraping:
+    tuboleta:
+      base-url: "https://www.tuboleta.com"
+      search-url: "/es/resultados-de-busqueda?ciudades=All&categorias=All&fecha_inicio=&fecha_final=&s=fucks+news"
+      user-agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+      rate-limit: 2000
 
-scraping:
-  tuboleta:
-    base-url: "https://www.tuboleta.com"
-    search-url: "/es/resultados-de-busqueda?ciudades=All&categorias=All&fecha_inicio=&fecha_final=&s=fucks+news"
-    user-agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-    rate-limit: 2000
-
-keepalive:
-  enabled: true
-  url: http://localhost:8080
+  keepalive:
+    enabled: true
+    url: http://localhost:8080
 
 
 
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics
-  endpoint:
-    health:
-      show-details: always
+  management:
+    endpoints:
+      web:
+        exposure:
+          include: health,info,metrics
+    endpoint:
+      health:
+        show-details: always
