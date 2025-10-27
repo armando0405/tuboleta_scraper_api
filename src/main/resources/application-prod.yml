@@ -41,7 +41,7 @@
       host: smtp.sendgrid.net
       port: 587
       username: apikey  # ← LITERAL "apikey" (no cambiar)
-      password: ${SENDGRID_API_KEY}  # ← Variable de entorno
+      password: ${SENDGRID_API_KEY:}  # ← Variable de entorno
       properties:
         mail:
           smtp:

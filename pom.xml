@@ -51,6 +51,12 @@
             <version>1.17.2</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.sendgrid</groupId>
+            <artifactId>sendgrid-java</artifactId>
+            <version>4.10.2</version>
+        </dependency>
+
         <!-- Lombok para código limpio -->
         <dependency>
             <groupId>org.projectlombok</groupId>

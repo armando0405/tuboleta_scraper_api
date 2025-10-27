@@ -1,14 +1,15 @@
 package com.armando0405.tuboletascraper.service;
 
+import com.sendgrid.*;
+import com.sendgrid.helpers.mail.Mail;
+import com.sendgrid.helpers.mail.objects.Content;
+import com.sendgrid.helpers.mail.objects.Email;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
-import jakarta.mail.internet.MimeMessage;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -18,8 +19,8 @@ import java.util.List;
 @ConditionalOnProperty(name = "notifications.email.enabled", havingValue = "true", matchIfMissing = false)
 public class EmailNotificationService {
 
-    @Autowired
-    private JavaMailSender mailSender;
+    @Value("${SENDGRID_API_KEY}")
+    private String sendGridApiKey;
 
     @Value("${notifications.email.from}")
     private String fromEmail;
@@ -86,29 +87,43 @@ public class EmailNotificationService {
     }
 
     /**
-     * 📧 MÉTODO CON REINTENTOS PARA ENVÍO
+     * 📧 MÉTODO CON REINTENTOS USANDO SENDGRID API
      */
     private void enviarCorreoConReintentos(String subject, String htmlContent) throws Exception {
         for (int intento = 1; intento <= maxRetryAttempts; intento++) {
             try {
-                MimeMessage message = mailSender.createMimeMessage();
-                MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+                // Extraer nombre y email del formato "Nombre <email@example.com>"
+                String fromEmailClean = extraerEmail(fromEmail);
+                String fromName = extraerNombre(fromEmail);
 
-                helper.setFrom(fromEmail);
-                helper.setTo(toEmail);
-                helper.setSubject(subject);
-                helper.setText(htmlContent, true); // true = es HTML
+                Email from = new Email(fromEmailClean, fromName);
+                Email to = new Email(toEmail);
+                Content content = new Content("text/html", htmlContent);
+                Mail mail = new Mail(from, subject, to, content);
 
-                mailSender.send(message);
-                log.info("✅ [INTENTO {}] Correo enviado exitosamente a: {}", intento, toEmail);
-                return; // Éxito, salir del bucle
+                SendGrid sg = new SendGrid(sendGridApiKey);
+                Request request = new Request();
 
-            } catch (Exception e) {
+                request.setMethod(Method.POST);
+                request.setEndpoint("mail/send");
+                request.setBody(mail.build());
+
+                Response response = sg.api(request);
+
+                if (response.getStatusCode() >= 200 && response.getStatusCode() < 300) {
+                    log.info("✅ [INTENTO {}] Correo enviado exitosamente via SendGrid API", intento);
+                    log.info("✅ [STATUS] {}", response.getStatusCode());
+                    return; // Éxito
+                } else {
+                    throw new IOException("SendGrid API error: " + response.getStatusCode() + " - " + response.getBody());
+                }
+
+            } catch (IOException e) {
                 log.warn("⚠️ [INTENTO {}/{}] Error enviando correo: {}",
                         intento, maxRetryAttempts, e.getMessage());
 
                 if (intento == maxRetryAttempts) {
-                    throw e; // Último intento fallido, lanzar excepción
+                    throw e; // Último intento fallido
                 }
 
                 // Esperar antes del siguiente intento
@@ -120,6 +135,28 @@ public class EmailNotificationService {
                 }
             }
         }
+    }
+
+    /**
+     * 🔧 EXTRAER EMAIL LIMPIO
+     */
+    private String extraerEmail(String fullEmail) {
+        if (fullEmail.contains("<") && fullEmail.contains(">")) {
+            int start = fullEmail.indexOf("<") + 1;
+            int end = fullEmail.indexOf(">");
+            return fullEmail.substring(start, end).trim();
+        }
+        return fullEmail.trim();
+    }
+
+    /**
+     * 🔧 EXTRAER NOMBRE
+     */
+    private String extraerNombre(String fullEmail) {
+        if (fullEmail.contains("<")) {
+            return fullEmail.substring(0, fullEmail.indexOf("<")).trim();
+        }
+        return "";
     }
 
     /**
@@ -137,23 +174,18 @@ public class EmailNotificationService {
         html.append("</head>");
         html.append("<body>");
 
-        // Container principal
         html.append("<div class='container'>");
-
-        // Header
         html.append("<div class='header'>");
         html.append("<h1>🚀 SISTEMA INICIADO</h1>");
         html.append("<div class='subtitle'>Monitoreo de Fucks News en TuBoleta</div>");
         html.append("</div>");
 
-        // Contenido
         html.append("<div class='content'>");
         html.append("<div class='success-message'>");
         html.append("<h3>✅ Sistema activado exitosamente</h3>");
         html.append("<p>El monitoreo automático de shows de <strong>Fucks News</strong> ha sido iniciado.</p>");
         html.append("</div>");
 
-        // Estadísticas
         html.append("<div class='stats'>");
         html.append("<div class='stat-item'>");
         html.append("<div class='stat-number'>").append(totalShows).append("</div>");
@@ -161,7 +193,6 @@ public class EmailNotificationService {
         html.append("</div>");
         html.append("</div>");
 
-        // Información adicional
         html.append("<div class='info-box'>");
         html.append("<h4>📋 ¿Qué significa esto?</h4>");
         html.append("<ul>");
@@ -173,10 +204,7 @@ public class EmailNotificationService {
         html.append("</div>");
 
         html.append("</div>");
-
-        // Footer
         agregarFooter(html);
-
         html.append("</div>");
         html.append("</body>");
         html.append("</html>");
@@ -199,19 +227,14 @@ public class EmailNotificationService {
         html.append("</head>");
         html.append("<body>");
 
-        // Container principal
         html.append("<div class='container'>");
-
-        // Header
         html.append("<div class='header header-alert'>");
         html.append("<h1>🚨 CAMBIOS DETECTADOS</h1>");
         html.append("<div class='subtitle'>Nuevas actualizaciones en shows de Fucks News</div>");
         html.append("</div>");
 
-        // Contenido
         html.append("<div class='content'>");
 
-        // Estadísticas
         html.append("<div class='stats'>");
         html.append("<div class='stat-item'>");
         html.append("<div class='stat-number alert'>").append(cambios.size()).append("</div>");
@@ -223,7 +246,6 @@ public class EmailNotificationService {
         html.append("</div>");
         html.append("</div>");
 
-        // Lista de cambios
         html.append("<div class='changes-section'>");
         html.append("<h3>📋 Detalle de Cambios:</h3>");
         html.append("<div class='changes-list'>");
@@ -244,10 +266,7 @@ public class EmailNotificationService {
         html.append("</div>");
 
         html.append("</div>");
-
-        // Footer
         agregarFooter(html);
-
         html.append("</div>");
         html.append("</body>");
         html.append("</html>");
@@ -262,35 +281,23 @@ public class EmailNotificationService {
         html.append("<style>");
         html.append("body { font-family: 'Arial', sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }");
         html.append(".container { max-width: 600px; margin: 0 auto; background-color: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); overflow: hidden; }");
-
-        // Header styles
         html.append(".header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; }");
         html.append(".header.header-alert { background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%); }");
         html.append(".header h1 { margin: 0; font-size: 28px; font-weight: bold; }");
         html.append(".header .subtitle { margin-top: 10px; opacity: 0.9; font-size: 16px; }");
-
-        // Content styles
         html.append(".content { padding: 30px; }");
-
-        // Success message
         html.append(".success-message { background-color: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; padding: 20px; margin-bottom: 25px; text-align: center; }");
         html.append(".success-message h3 { margin-top: 0; color: #155724; }");
         html.append(".success-message p { color: #155724; margin-bottom: 0; }");
-
-        // Stats styles
         html.append(".stats { display: flex; justify-content: center; margin-bottom: 25px; gap: 30px; }");
         html.append(".stat-item { text-align: center; }");
         html.append(".stat-number { font-size: 36px; font-weight: bold; color: #007bff; }");
         html.append(".stat-number.alert { color: #dc3545; }");
         html.append(".stat-label { font-size: 14px; color: #6c757d; margin-top: 5px; }");
-
-        // Info box
         html.append(".info-box { background-color: #e3f2fd; border: 1px solid #bbdefb; border-radius: 8px; padding: 20px; margin-top: 20px; }");
         html.append(".info-box h4 { margin-top: 0; color: #1565c0; }");
         html.append(".info-box ul { margin-bottom: 0; }");
         html.append(".info-box li { color: #1565c0; margin-bottom: 8px; }");
-
-        // Changes styles
         html.append(".changes-section h3 { color: #333; margin-bottom: 20px; }");
         html.append(".change-item { background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; padding: 15px; margin-bottom: 10px; display: flex; align-items: center; }");
         html.append(".change-item.agregado { background-color: #d4edda; border-color: #c3e6cb; }");
@@ -299,16 +306,10 @@ public class EmailNotificationService {
         html.append(".change-icon { font-size: 18px; margin-right: 10px; }");
         html.append(".change-number { font-weight: bold; margin-right: 10px; color: #666; }");
         html.append(".change-text { flex: 1; }");
-
-        // Footer styles
         html.append(".footer { background-color: #f8f9fa; padding: 20px; text-align: center; color: #6c757d; font-size: 12px; border-top: 1px solid #dee2e6; }");
-
         html.append("</style>");
     }
 
-    /**
-     * 📄 AGREGAR FOOTER
-     */
     private void agregarFooter(StringBuilder html) {
         html.append("<div class='footer'>");
         html.append("🤖 Mensaje generado automáticamente por Fucks News Bot<br>");
@@ -317,9 +318,6 @@ public class EmailNotificationService {
         html.append("</div>");
     }
 
-    /**
-     * 🎯 DETERMINAR TIPO DE CAMBIO PARA CSS
-     */
     private String determinarTipoCambio(String cambio) {
         if (cambio.startsWith("Agregado:")) return "agregado";
         if (cambio.startsWith("Modificado:")) return "modificado";
@@ -327,9 +325,6 @@ public class EmailNotificationService {
         return "general";
     }
 
-    /**
-     * 🎯 OBTENER ICONO SEGÚN TIPO DE CAMBIO
-     */
     private String obtenerIconoCambio(String cambio) {
         if (cambio.startsWith("Agregado:")) return "➕";
         if (cambio.startsWith("Modificado:")) return "✏️";
@@ -354,41 +349,31 @@ public class EmailNotificationService {
         }
     }
 
-    /**
-     * 🧪 GENERAR HTML PARA PRUEBA
-     */
     private String generarHTMLPrueba() {
         StringBuilder html = new StringBuilder();
-
         html.append("<!DOCTYPE html>");
         html.append("<html>");
         html.append("<head>");
         html.append("<meta charset='UTF-8'>");
-        html.append("<title>Fucks News - Prueba de Configuración</title>");
+        html.append("<title>Fucks News - Prueba</title>");
         agregarEstilosCSS(html);
         html.append("</head>");
         html.append("<body>");
-
         html.append("<div class='container'>");
-
         html.append("<div class='header'>");
         html.append("<h1>🧪 PRUEBA DE CONFIGURACIÓN</h1>");
         html.append("<div class='subtitle'>Test del sistema de notificaciones</div>");
         html.append("</div>");
-
         html.append("<div class='content'>");
         html.append("<div class='success-message'>");
         html.append("<h3>✅ ¡Configuración Correcta!</h3>");
-        html.append("<p>Si recibes este correo, el sistema de notificaciones está funcionando perfectamente.</p>");
+        html.append("<p>Si recibes este correo, el sistema está funcionando perfectamente.</p>");
         html.append("</div>");
         html.append("</div>");
-
         agregarFooter(html);
-
         html.append("</div>");
         html.append("</body>");
         html.append("</html>");
-
         return html.toString();
     }
 }
